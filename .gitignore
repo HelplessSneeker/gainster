@@ -1,3 +1,18 @@
-.env
-node_modules
+# dependencies
+node_modules/
 
+# env & secrets
+.env
+.env.*
+
+# api build output
+api/dist/
+*.db
+
+# next.js
+web/.next/
+web/out/
+
+# misc
+.DS_Store
+*.tsbuildinfo
