@@ -12,13 +12,15 @@ See `AGENTS.md` for full conventions (naming, patterns, error handling, principl
 pnpm dev                          # Both API + web dev servers
 pnpm dev:api                      # Fastify only (tsx watch, hot reload)
 pnpm dev:web                      # Next.js only
-pnpm build                        # Build all
+pnpm build                        # Build all packages
 pnpm build:api                    # tsc -b → api/dist/
 pnpm build:web                    # next build
+pnpm build:market-data            # tsc -b → packages/market-data/dist/
+pnpm smoke:market-data            # Run market-data smoke test (needs TWELVEDATA_API_KEY)
 pnpm --filter @gainster/web lint  # ESLint (web only, no API linter)
 ```
 
-Add dependencies with `pnpm --filter @gainster/api add <pkg>` or `pnpm --filter @gainster/web add <pkg>`. Never use npm or yarn.
+Add dependencies with `pnpm --filter <package> add <pkg>`. Never use npm or yarn.
 
 Add shadcn components: `pnpm dlx shadcn@latest add <component>` (run from `web/`).
 
@@ -26,14 +28,15 @@ No test framework yet. When added, prefer vitest.
 
 ## Architecture
 
-pnpm monorepo with two packages:
+pnpm monorepo with three packages:
 
-- **`api/`** (`@gainster/api`) — Fastify v5 REST API. TypeScript ESM with maximally strict tsconfig. SQLite via better-sqlite3 (synchronous, WAL mode). TwelveData for market data (free tier: 8 req/min, 800 req/day — cache aggressively in SQLite).
+- **`api/`** (`@gainster/api`) — Fastify v5 REST API (scaffolded, no source code yet). Dependencies installed: fastify, better-sqlite3, @fastify/cors.
 - **`web/`** (`@gainster/web`) — Next.js 16 with React 19, App Router, Tailwind v4, shadcn/ui. Server Components by default.
+- **`packages/market-data/`** (`@gainster/market-data`) — Standalone market data provider library. TwelveData integration via native `fetch` with built-in rate limiter (default 8 req/min). No external runtime dependencies.
 
-## Critical TypeScript Constraints (API)
+## Critical TypeScript Constraints (API & market-data)
 
-These cause the most common compilation errors:
+These cause the most common compilation errors in ESM packages (`api/`, `packages/market-data/`):
 
 1. **Relative imports require `.js` extension**: `import { foo } from './bar.js'` not `'./bar'`
 2. **Type imports must use `import type`**: `import type { FastifyInstance } from 'fastify'`

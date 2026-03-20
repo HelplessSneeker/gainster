@@ -4,19 +4,12 @@ Stock portfolio tracker & analysis platform. Fastify API + Next.js dashboard + S
 
 ## Monorepo Layout
 
-pnpm workspaces with two packages:
+pnpm workspaces with three packages:
 
 ```
-api/                    # Fastify REST API (TypeScript, ESM)
-  src/
-    index.ts            # Entry point — Fastify server bootstrap
-    routes/             # Fastify route plugins (one file per resource)
-    services/           # Business logic & external API wrappers
-    db/                 # Database init, queries, migrations
-    types/              # Shared TypeScript type definitions
-    utils/              # Pure helper functions
-  dist/                 # Compiled output (gitignored)
-  .env                  # API secrets (gitignored)
+api/                    # Fastify REST API (scaffolded, no source yet)
+  package.json          # Dependencies: fastify v5, better-sqlite3, @fastify/cors
+  tsconfig.json         # Strict ESM config (nodenext)
 web/                    # Next.js 16 dashboard (App Router, Tailwind v4, shadcn/ui)
   src/
     app/                # App Router routes and layouts
@@ -24,6 +17,18 @@ web/                    # Next.js 16 dashboard (App Router, Tailwind v4, shadcn/
     components/         # Custom app components go here (outside ui/)
     lib/utils.ts        # cn() helper for className merging
     hooks/              # Custom React hooks
+packages/
+  market-data/          # Standalone market data provider library
+    src/
+      index.ts          # Public API — re-exports types, providers, factory
+      types.ts          # MarketDataProvider interface, Quote, Candle, ApiUsage
+      errors.ts         # MarketDataError, ProviderApiError, RateLimitExceededError
+      rate-limiter.ts   # Token-bucket rate limiter (configurable RPM + burst)
+      factory.ts        # createTwelveDataProvider() — reads env vars
+      providers/
+        twelvedata/     # TwelveData implementation (native fetch, no SDK)
+    scripts/
+      smoke.ts          # Smoke test — fetches a quote via the provider
 ```
 
 ## Build / Dev / Test Commands
@@ -35,9 +40,11 @@ pnpm build              # Build all packages
 
 # Per-package
 pnpm dev:api            # Fastify dev server (tsx watch)
-pnpm dev:web            # Next.js dev server (port 3000)
+pnpm dev:web            # Next.js dev server
 pnpm build:api          # TypeScript compile (tsc -b) → api/dist/
 pnpm build:web          # next build
+pnpm build:market-data  # TypeScript compile (tsc -b) → packages/market-data/dist/
+pnpm smoke:market-data  # Run market-data smoke test (needs TWELVEDATA_API_KEY)
 
 # Linting (web only — ESLint + eslint-config-next)
 pnpm --filter @gainster/web lint
@@ -51,14 +58,14 @@ To add a dep to a specific package: `pnpm --filter @gainster/web add <pkg>`.
 
 ## API — TypeScript Strict Mode & Imports
 
-The API tsconfig (`api/tsconfig.json`) is maximally strict:
+The API and market-data tsconfigs are maximally strict:
 
 - **`strict: true`** — strictNullChecks, noImplicitAny, etc.
 - **`noUncheckedIndexedAccess: true`** — index access returns `T | undefined`. Narrow before use.
 - **`exactOptionalPropertyTypes: true`** — `foo?: string` does NOT accept explicit `undefined`.
 - **`verbatimModuleSyntax: true`** — type-only imports MUST use `import type`.
 
-The API is ESM (`"type": "module"`, `"module": "nodenext"`).
+Both are ESM (`"type": "module"`, `"module": "nodenext"`).
 
 ```typescript
 // .js extension required in relative imports
@@ -126,10 +133,12 @@ Register via `fastify.register(plugin)`. Always define `schema` on routes for va
 - Wrap multi-writes in transactions: `db.transaction(...)()`.
 - Timestamps: ISO 8601 strings or Unix epoch integers.
 
-## TwelveData API (`api/src/services/twelvedata.ts`)
+## Market Data (`packages/market-data/`)
 
-- Rate limits: **8 req/min, 800 req/day** (free tier). Cache in SQLite with TTL.
-- Always try/catch — never let TwelveData errors crash the server.
+- `MarketDataProvider` interface with `getQuote()`, `getCandles()`, `getApiUsage()`.
+- `TwelveDataProvider` — uses native `fetch` (no SDK). Built-in rate limiter (default 8 req/min, burst 1).
+- Factory: `createTwelveDataProvider()` reads `TWELVEDATA_API_KEY`, `TWELVEDATA_RPM`, `TWELVEDATA_BURST` from env.
+- Rate limits (free tier): **8 req/min, 800 req/day** — cache aggressively when consumed from other packages.
 
 ## Frontend (Next.js + shadcn/ui)
 
@@ -147,13 +156,11 @@ Register via `fastify.register(plugin)`. Always define `schema` on routes for va
 
 ## Environment Variables
 
-Secrets in `api/.env` (gitignored):
-
-| Variable            | Description                |
-|---------------------|----------------------------|
-| `TWELVEDATA_API_KEY`| API key for TwelveData     |
-| `PORT`              | Server port (default 3000) |
-| `DATABASE_PATH`     | SQLite file path (optional)|
+| Variable              | Used by        | Description                    |
+|-----------------------|----------------|--------------------------------|
+| `TWELVEDATA_API_KEY`  | market-data    | API key for TwelveData         |
+| `TWELVEDATA_RPM`      | market-data    | Requests per minute (default 8)|
+| `TWELVEDATA_BURST`    | market-data    | Burst concurrency (default 1)  |
 
 ## Error Handling
 
