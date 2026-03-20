@@ -9,6 +9,7 @@ Built with a **Fastify** REST API, **Next.js 16** dashboard, **SQLite** database
 ```
 api/                  — Fastify REST API (TypeScript, ESM, strict mode) — scaffolded, no source yet
 web/                  — Next.js 16 dashboard (App Router, Tailwind v4, shadcn/ui)
+packages/db/          — Shared database package (Drizzle ORM + SQLite)
 packages/market-data/ — Market data provider library (TwelveData integration)
 ```
 
@@ -45,6 +46,10 @@ pnpm dev
 | `pnpm build:web` | Build Next.js for production |
 | `pnpm build:market-data` | Compile market-data → `packages/market-data/dist/` |
 | `pnpm smoke:market-data` | Run market-data smoke test |
+| `pnpm build:db` | Compile db → `packages/db/dist/` |
+| `pnpm db:generate` | Generate Drizzle migration SQL |
+| `pnpm db:migrate` | Apply pending migrations |
+| `pnpm db:studio` | Open Drizzle Studio |
 | `pnpm --filter @gainster/web lint` | Lint the web package |
 
 ## Tech Stack
@@ -52,8 +57,14 @@ pnpm dev
 ### API (`@gainster/api`)
 
 - [Fastify](https://fastify.dev/) v5 — HTTP framework
-- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — SQLite driver (WAL mode)
+- `@gainster/db` — shared database access
 - TypeScript (strict mode, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`)
+
+### Database (`@gainster/db`)
+
+- [Drizzle ORM](https://orm.drizzle.team/) — type-safe SQL queries and schema definitions
+- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — SQLite driver (WAL mode)
+- Tables: `watchlist` (tracked symbols), `candles` (OHLCV time series)
 
 ### Web (`@gainster/web`)
 
@@ -75,6 +86,7 @@ pnpm dev
 | `TWELVEDATA_API_KEY` | API key for TwelveData (required by market-data) |
 | `TWELVEDATA_RPM` | Requests per minute override (default 8) |
 | `TWELVEDATA_BURST` | Burst concurrency override (default 1) |
+| `GAINSTER_DB_PATH` | SQLite file path (default `gainster-db` in cwd) |
 
 ## License
 

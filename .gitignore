@@ -10,7 +10,11 @@ api/dist/
 
 # market-data build output
 packages/market-data/dist/
+
+# db build output
+packages/db/dist/
 *.db
+gainster-db
 
 # next.js
 web/.next/

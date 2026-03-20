@@ -19,6 +19,10 @@
     "build:api": "pnpm --filter @gainster/api build",
     "build:web": "pnpm --filter @gainster/web build",
     "build:market-data": "pnpm --filter @gainster/market-data build",
-    "smoke:market-data": "pnpm --filter @gainster/market-data smoke"
+    "smoke:market-data": "pnpm --filter @gainster/market-data smoke",
+    "build:db": "pnpm --filter @gainster/db build",
+    "db:generate": "pnpm --filter @gainster/db db:generate",
+    "db:migrate": "pnpm --filter @gainster/db db:migrate",
+    "db:studio": "pnpm --filter @gainster/db db:studio"
   }
 }

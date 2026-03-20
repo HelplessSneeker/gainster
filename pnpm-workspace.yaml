@@ -2,3 +2,4 @@ packages:
   - "api"
   - "web"
   - "packages/market-data"
+  - "packages/db"

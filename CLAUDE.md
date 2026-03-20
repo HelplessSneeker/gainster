@@ -17,6 +17,10 @@ pnpm build:api                    # tsc -b → api/dist/
 pnpm build:web                    # next build
 pnpm build:market-data            # tsc -b → packages/market-data/dist/
 pnpm smoke:market-data            # Run market-data smoke test (needs TWELVEDATA_API_KEY)
+pnpm build:db                     # tsc -b → packages/db/dist/
+pnpm db:generate                  # Generate Drizzle migration SQL
+pnpm db:migrate                   # Apply pending migrations
+pnpm db:studio                    # Open Drizzle Studio
 pnpm --filter @gainster/web lint  # ESLint (web only, no API linter)
 ```
 
@@ -28,15 +32,16 @@ No test framework yet. When added, prefer vitest.
 
 ## Architecture
 
-pnpm monorepo with three packages:
+pnpm monorepo with four packages:
 
-- **`api/`** (`@gainster/api`) — Fastify v5 REST API (scaffolded, no source code yet). Dependencies installed: fastify, better-sqlite3, @fastify/cors.
+- **`api/`** (`@gainster/api`) — Fastify v5 REST API (scaffolded, no source code yet). Dependencies installed: fastify, @fastify/cors, @gainster/db.
 - **`web/`** (`@gainster/web`) — Next.js 16 with React 19, App Router, Tailwind v4, shadcn/ui. Server Components by default.
 - **`packages/market-data/`** (`@gainster/market-data`) — Standalone market data provider library. TwelveData integration via native `fetch` with built-in rate limiter (default 8 req/min). No external runtime dependencies.
+- **`packages/db/`** (`@gainster/db`) — Shared database package. Drizzle ORM + better-sqlite3. Owns all schema definitions and migrations. Two subpath exports: `@gainster/db` (client + migrations + schema) and `@gainster/db/schema` (schema-only, no db connection). DB path: `GAINSTER_DB_PATH` env var or `gainster-db` default.
 
-## Critical TypeScript Constraints (API & market-data)
+## Critical TypeScript Constraints (ESM packages)
 
-These cause the most common compilation errors in ESM packages (`api/`, `packages/market-data/`):
+These cause the most common compilation errors in ESM packages (`api/`, `packages/market-data/`, `packages/db/`):
 
 1. **Relative imports require `.js` extension**: `import { foo } from './bar.js'` not `'./bar'`
 2. **Type imports must use `import type`**: `import type { FastifyInstance } from 'fastify'`
@@ -44,6 +49,10 @@ These cause the most common compilation errors in ESM packages (`api/`, `package
 4. **`exactOptionalPropertyTypes`**: `foo?: string` does not accept explicit `undefined` as a value
 
 The web package uses `moduleResolution: "bundler"` — no `.js` extensions needed, uses `@/*` path alias.
+
+## Database Migrations
+
+When generating migrations with `pnpm db:generate`, Drizzle auto-generates random names (e.g. `0001_hot_lady_deathstrike.sql`). After generating, rename the file to something descriptive (e.g. `0001_add_candles_table.sql`) and update the matching entry in `packages/db/drizzle/meta/_journal.json`.
 
 ## Do Not Edit
 

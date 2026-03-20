@@ -1,0 +1,32 @@
+{
+  "name": "@gainster/db",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "drizzle-orm": "^0.44.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.5.0",
+    "drizzle-kit": "^0.31.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
