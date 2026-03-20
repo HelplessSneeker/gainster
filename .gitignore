@@ -7,6 +7,9 @@ node_modules/
 
 # api build output
 api/dist/
+
+# market-data build output
+packages/market-data/dist/
 *.db
 
 # next.js

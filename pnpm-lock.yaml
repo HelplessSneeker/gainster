@@ -36,6 +36,18 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/market-data:
+    devDependencies:
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.5.0
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   web:
     dependencies:
       '@base-ui/react':
