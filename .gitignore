@@ -13,6 +13,9 @@ packages/market-data/dist/
 
 # db build output
 packages/db/dist/
+
+# scripts build output
+packages/scripts/dist/
 *.db
 gainster-db
 

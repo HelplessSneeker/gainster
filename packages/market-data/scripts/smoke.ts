@@ -1,15 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { createTwelveDataProvider } from '../src/index.js';
 
-// Load .env file if present
-try {
-  const env = readFileSync(new URL('../.env', import.meta.url), 'utf-8');
-  for (const line of env.split('\n')) {
-    const match = line.match(/^\s*([^#=]+?)\s*=\s*(.*)\s*$/);
-    if (match) process.env[match[1]!] ??= match[2]!;
+// Load .env file if present (root first, then package root)
+for (const base of ['../../../.env', '../.env']) {
+  try {
+    const env = readFileSync(new URL(base, import.meta.url), 'utf-8');
+    for (const line of env.split('\n')) {
+      const match = line.match(/^\s*([^#=]+?)\s*=\s*(.*)\s*$/);
+      if (match) process.env[match[1]!] ??= match[2]!;
+    }
+  } catch {
+    // No .env file at this location
   }
-} catch {
-  // No .env file — rely on environment
 }
 
 const provider = createTwelveDataProvider();

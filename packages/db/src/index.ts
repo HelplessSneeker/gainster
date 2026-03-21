@@ -7,3 +7,5 @@ export { watchlist } from './schema/index.js';
 export type { Watchlist, NewWatchlist } from './schema/index.js';
 export { candles } from './schema/index.js';
 export type { Candle, NewCandle } from './schema/index.js';
+export { getActiveWatchlistSymbols, upsertCandles, getCandleDatetimes } from './queries.js';
+export type { UpsertCandlesResult } from './queries.js';

@@ -11,6 +11,7 @@ api/                  — Fastify REST API (TypeScript, ESM, strict mode) — sc
 web/                  — Next.js 16 dashboard (App Router, Tailwind v4, shadcn/ui)
 packages/db/          — Shared database package (Drizzle ORM + SQLite)
 packages/market-data/ — Market data provider library (TwelveData integration)
+packages/scripts/     — CLI scripts (backfill, etc.)
 ```
 
 Managed with **pnpm workspaces** (`pnpm v10.28.2`).
@@ -27,8 +28,14 @@ Managed with **pnpm workspaces** (`pnpm v10.28.2`).
 # Install dependencies
 pnpm install
 
+# Add your API key to the root .env
+echo "TWELVEDATA_API_KEY=your_key_here" > .env
+
 # Run the market-data smoke test
-TWELVEDATA_API_KEY=your_key_here pnpm smoke:market-data
+pnpm smoke:market-data
+
+# Backfill historical candle data
+pnpm backfill -- --symbol AAPL --interval 1day
 
 # Start both dev servers
 pnpm dev
@@ -50,6 +57,8 @@ pnpm dev
 | `pnpm db:generate` | Generate Drizzle migration SQL |
 | `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:studio` | Open Drizzle Studio |
+| `pnpm backfill` | Backfill candle data (all active watchlist tickers, 5min) |
+| `pnpm backfill -- -s AAPL -i 1day` | Backfill specific symbol/interval |
 | `pnpm --filter @gainster/web lint` | Lint the web package |
 
 ## Tech Stack
@@ -79,11 +88,19 @@ pnpm dev
 - Built-in token-bucket rate limiter (configurable RPM + burst)
 - Provider interface: `getQuote()`, `getCandles()`, `getApiUsage()`
 
+### Scripts (`@gainster/scripts`)
+
+- **Backfill** — seeds historical OHLCV candle data from TwelveData into SQLite
+- Flags: `--symbol` / `-s` (default: all active watchlist tickers), `--interval` / `-i` (default: `5min`)
+- Batch upsert with duplicate detection, intraday gap warnings
+
 ## Environment Variables
+
+Store all env vars in the root `.env` file. Scripts load it automatically.
 
 | Variable | Description |
 |---|---|
-| `TWELVEDATA_API_KEY` | API key for TwelveData (required by market-data) |
+| `TWELVEDATA_API_KEY` | API key for TwelveData (required for market data and backfill) |
 | `TWELVEDATA_RPM` | Requests per minute override (default 8) |
 | `TWELVEDATA_BURST` | Burst concurrency override (default 1) |
 | `GAINSTER_DB_PATH` | SQLite file path (default `gainster-db` in cwd) |
