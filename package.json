@@ -18,6 +18,7 @@
     "build": "pnpm -r build",
     "build:api": "pnpm --filter @gainster/api build",
     "build:web": "pnpm --filter @gainster/web build",
+    "build:env": "pnpm --filter @gainster/env build",
     "build:market-data": "pnpm --filter @gainster/market-data build",
     "smoke:market-data": "pnpm --filter @gainster/market-data smoke",
     "build:db": "pnpm --filter @gainster/db build",

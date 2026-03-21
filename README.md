@@ -9,6 +9,7 @@ Built with a **Fastify** REST API, **Next.js 16** dashboard, **SQLite** database
 ```
 api/                  — Fastify REST API (TypeScript, ESM, strict mode) — scaffolded, no source yet
 web/                  — Next.js 16 dashboard (App Router, Tailwind v4, shadcn/ui)
+packages/env/         — Centralized env loading + validation (zod)
 packages/db/          — Shared database package (Drizzle ORM + SQLite)
 packages/market-data/ — Market data provider library (TwelveData integration)
 packages/scripts/     — CLI scripts (backfill, etc.)
@@ -51,6 +52,7 @@ pnpm dev
 | `pnpm build` | Build all packages |
 | `pnpm build:api` | Compile API TypeScript → `api/dist/` |
 | `pnpm build:web` | Build Next.js for production |
+| `pnpm build:env` | Compile env → `packages/env/dist/` |
 | `pnpm build:market-data` | Compile market-data → `packages/market-data/dist/` |
 | `pnpm smoke:market-data` | Run market-data smoke test |
 | `pnpm build:db` | Compile db → `packages/db/dist/` |
@@ -82,6 +84,12 @@ pnpm dev
 - [shadcn/ui](https://ui.shadcn.com/) — component library
 - [Recharts](https://recharts.org/) — data visualization
 
+### Env (`@gainster/env`)
+
+- [Zod](https://zod.dev/) — schema validation for environment variables
+- `loadEnv()` reads root `.env`, validates, returns a typed frozen `Env` object
+- Library packages accept explicit config — no direct `process.env` coupling
+
 ### Market Data (`@gainster/market-data`)
 
 - [TwelveData](https://twelvedata.com/) — market data API (via native `fetch`, no SDK)
@@ -96,7 +104,7 @@ pnpm dev
 
 ## Environment Variables
 
-Store all env vars in the root `.env` file. Scripts load it automatically.
+Store all env vars in the root `.env` file. Use `loadEnv()` from `@gainster/env` to load and validate them.
 
 | Variable | Description |
 |---|---|

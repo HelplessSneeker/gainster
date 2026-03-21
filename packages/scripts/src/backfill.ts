@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { createDb, migrate, getActiveWatchlistSymbols } from '@gainster/db';
+import { loadEnv } from '@gainster/env';
 import { createTwelveDataProvider } from '@gainster/market-data';
 import { parseBackfillArgs } from './lib/parse-args.js';
 import { fetchCandles } from './lib/fetch-candles.js';
@@ -7,29 +7,22 @@ import { upsertCandles } from './lib/upsert-candles.js';
 import { detectGaps } from './lib/detect-gaps.js';
 import * as log from './lib/log.js';
 
-// Load .env file if present (root first, then package root)
-for (const base of ['../../../.env', '../../.env']) {
-  try {
-    const env = readFileSync(new URL(base, import.meta.url), 'utf-8');
-    for (const line of env.split('\n')) {
-      const match = line.match(/^\s*([^#=]+?)\s*=\s*(.*)\s*$/);
-      if (match) process.env[match[1]!] ??= match[2]!;
-    }
-  } catch {
-    // No .env file at this location
-  }
-}
-
+const env = loadEnv();
 const args = parseBackfillArgs();
 
 log.info(`Backfill starting — interval: ${args.interval}`);
 
 // Initialize database and run migrations
-const db = createDb();
+const { db, dbPath } = createDb({ dbPath: env.GAINSTER_DB_PATH });
 migrate(db);
+log.info(`Database: ${dbPath}`);
 
 // Initialize market data provider
-const provider = createTwelveDataProvider();
+const provider = createTwelveDataProvider({
+  apiKey: env.TWELVEDATA_API_KEY,
+  rpm: env.TWELVEDATA_RPM,
+  burst: env.TWELVEDATA_BURST,
+});
 
 // Resolve tickers
 let symbols: string[];

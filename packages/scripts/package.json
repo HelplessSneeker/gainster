@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@gainster/db": "workspace:*",
+    "@gainster/env": "workspace:*",
     "@gainster/market-data": "workspace:*"
   },
   "devDependencies": {

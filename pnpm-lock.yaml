@@ -42,6 +42,9 @@ importers:
         specifier: ^0.44.0
         version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@12.8.0)
     devDependencies:
+      '@gainster/env':
+        specifier: workspace:*
+        version: link:../env
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -58,8 +61,24 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/env:
+    dependencies:
+      zod:
+        specifier: ^3.25.67
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.5.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/market-data:
     devDependencies:
+      '@gainster/env':
+        specifier: workspace:*
+        version: link:../env
       '@types/node':
         specifier: ^25.5.0
         version: 25.5.0
@@ -75,6 +94,9 @@ importers:
       '@gainster/db':
         specifier: workspace:*
         version: link:../db
+      '@gainster/env':
+        specifier: workspace:*
+        version: link:../env
       '@gainster/market-data':
         specifier: workspace:*
         version: link:../market-data
@@ -4039,9 +4061,6 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
-  zod@4.3.6:
-    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
-
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
@@ -5956,8 +5975,8 @@ snapshots:
       '@babel/parser': 7.29.2
       eslint: 9.39.4(jiti@2.6.1)
       hermes-parser: 0.25.1
-      zod: 4.3.6
-      zod-validation-error: 4.0.2(zod@4.3.6)
+      zod: 3.25.76
+      zod-validation-error: 4.0.2(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
 
@@ -7973,10 +7992,8 @@ snapshots:
     dependencies:
       zod: 3.25.76
 
-  zod-validation-error@4.0.2(zod@4.3.6):
+  zod-validation-error@4.0.2(zod@3.25.76):
     dependencies:
-      zod: 4.3.6
+      zod: 3.25.76
 
   zod@3.25.76: {}
-
-  zod@4.3.6: {}

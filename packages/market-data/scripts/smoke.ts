@@ -1,20 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { loadEnv } from '@gainster/env';
 import { createTwelveDataProvider } from '../src/index.js';
 
-// Load .env file if present (root first, then package root)
-for (const base of ['../../../.env', '../.env']) {
-  try {
-    const env = readFileSync(new URL(base, import.meta.url), 'utf-8');
-    for (const line of env.split('\n')) {
-      const match = line.match(/^\s*([^#=]+?)\s*=\s*(.*)\s*$/);
-      if (match) process.env[match[1]!] ??= match[2]!;
-    }
-  } catch {
-    // No .env file at this location
-  }
-}
+const env = loadEnv();
 
-const provider = createTwelveDataProvider();
+const provider = createTwelveDataProvider({
+  apiKey: env.TWELVEDATA_API_KEY,
+  rpm: env.TWELVEDATA_RPM,
+  burst: env.TWELVEDATA_BURST,
+});
 
 console.log('Fetching API usage...');
 const usage = await provider.getApiUsage();

@@ -1,5 +1,5 @@
 {
-  "name": "@gainster/market-data",
+  "name": "@gainster/env",
   "version": "1.0.0",
   "type": "module",
   "exports": {
@@ -9,13 +9,13 @@
     }
   },
   "scripts": {
-    "build": "tsc -b",
-    "smoke": "tsx scripts/smoke.ts"
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "zod": "^3.25.67"
   },
   "devDependencies": {
-    "@gainster/env": "workspace:*",
     "@types/node": "^25.5.0",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

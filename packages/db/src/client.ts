@@ -6,7 +6,13 @@ import * as schema from './schema/index.js';
 
 export type DrizzleDb = BetterSQLite3Database<typeof schema>;
 
-export function createDb(options?: ConnectionOptions): DrizzleDb {
-  const connection = createConnection(options);
-  return drizzle(connection, { schema });
+export interface CreateDbResult {
+  db: DrizzleDb;
+  dbPath: string;
+}
+
+export function createDb(options?: ConnectionOptions): CreateDbResult {
+  const { db: connection, dbPath } = createConnection(options);
+  const db = drizzle(connection, { schema });
+  return { db, dbPath };
 }

@@ -1,6 +1,7 @@
 packages:
   - "api"
   - "web"
+  - "packages/env"
   - "packages/market-data"
   - "packages/db"
   - "packages/scripts"

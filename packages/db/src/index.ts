@@ -1,7 +1,7 @@
 export { createDb } from './client.js';
-export type { DrizzleDb } from './client.js';
+export type { DrizzleDb, CreateDbResult } from './client.js';
 export { createConnection } from './connection.js';
-export type { ConnectionOptions } from './connection.js';
+export type { ConnectionOptions, ConnectionResult } from './connection.js';
 export { migrate } from './migrate.js';
 export { watchlist } from './schema/index.js';
 export type { Watchlist, NewWatchlist } from './schema/index.js';
