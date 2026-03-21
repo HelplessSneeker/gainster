@@ -8,6 +8,9 @@ node_modules/
 # api build output
 api/dist/
 
+# env build output
+packages/env/dist/
+
 # market-data build output
 packages/market-data/dist/
 
