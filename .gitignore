@@ -18,6 +18,8 @@ packages/db/dist/
 packages/scripts/dist/
 *.db
 gainster-db
+gainster-db-shm
+gainster-db-wal
 
 # next.js
 web/.next/
