@@ -26,7 +26,7 @@ packages/
       schema.ts         # Zod schema defining all env vars
   db/                   # Shared database package (Drizzle ORM + better-sqlite3)
     src/
-      schema/           # Drizzle table definitions (watchlist, candles)
+      schema/           # Drizzle table definitions (watchlist, candles, ai_signals, trades, positions, portfolio_snapshots)
       client.ts         # createDb() → { db, dbPath }
       connection.ts     # createConnection() — better-sqlite3 with WAL + FK
       migrate.ts        # migrate() — applies pending migrations
