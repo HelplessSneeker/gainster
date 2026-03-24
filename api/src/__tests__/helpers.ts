@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { MarketDataProvider } from '@gainster/market-data';
+import type { DrizzleDb } from '@gainster/db';
+import { ensureAccount } from '@gainster/db';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
@@ -8,7 +10,9 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { buildApp } from '../app.js';
 
-export function createTestDb() {
+const DEFAULT_INITIAL_CASH = 100_000;
+
+export function createTestDb(): { db: DrizzleDb; sqlite: InstanceType<typeof Database> } {
   const sqlite = new Database(':memory:');
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
@@ -20,6 +24,7 @@ export function createTestDb() {
     '..', '..', '..', 'packages', 'db', 'drizzle',
   );
   migrate(db, { migrationsFolder: dbPkgDir });
+  ensureAccount(db, DEFAULT_INITIAL_CASH);
 
   return { db, sqlite };
 }

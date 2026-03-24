@@ -18,24 +18,19 @@ const INTERVAL_MINUTES: Record<string, number> = {
   '4h': 240,
 };
 
-/** EST offset (UTC-5). DST transitions may misclassify by one hour. */
-const EST_OFFSET_HOURS = -5;
-const MARKET_OPEN_HOUR = 9;
-const MARKET_OPEN_MINUTE = 30;
-const MARKET_CLOSE_HOUR = 16;
-
-function toEstHour(utcDate: Date): { hour: number; minute: number } {
-  const estMs = utcDate.getTime() + EST_OFFSET_HOURS * 60 * 60 * 1000;
-  const est = new Date(estMs);
-  return { hour: est.getUTCHours(), minute: est.getUTCMinutes() };
-}
+const easternFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  hour: 'numeric',
+  minute: 'numeric',
+  hour12: false,
+});
 
 function isMarketHours(utcDate: Date): boolean {
-  const { hour, minute } = toEstHour(utcDate);
+  const parts = easternFormat.formatToParts(utcDate);
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
   const totalMinutes = hour * 60 + minute;
-  const openMinutes = MARKET_OPEN_HOUR * 60 + MARKET_OPEN_MINUTE;
-  const closeMinutes = MARKET_CLOSE_HOUR * 60;
-  return totalMinutes >= openMinutes && totalMinutes <= closeMinutes;
+  return totalMinutes >= 570 && totalMinutes < 960; // 9:30 - 16:00
 }
 
 function sameCalendarDay(a: Date, b: Date): boolean {

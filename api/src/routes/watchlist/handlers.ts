@@ -33,8 +33,18 @@ export async function getWatchlist(request: FastifyRequest, reply: FastifyReply)
 
 export async function createWatchlist(request: FastifyRequest, reply: FastifyReply) {
   const body = createWatchlistSchema.parse(request.body);
-  const item = insertWatchlistItem(request.server.db, body);
-  return reply.code(201).send(item);
+  try {
+    const item = insertWatchlistItem(request.server.db, body);
+    return reply.code(201).send(item);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('UNIQUE constraint failed')) {
+      return reply.code(409).send({
+        error: `Symbol ${body.symbol} is already on the watchlist`,
+        statusCode: 409,
+      });
+    }
+    throw err;
+  }
 }
 
 export async function updateWatchlist(request: FastifyRequest, reply: FastifyReply) {

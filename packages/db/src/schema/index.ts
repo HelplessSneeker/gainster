@@ -1,3 +1,5 @@
+export { account } from './account.js';
+export type { Account, NewAccount } from './account.js';
 export { watchlist } from './watchlist.js';
 export type { Watchlist, NewWatchlist } from './watchlist.js';
 export { candles } from './candles.js';

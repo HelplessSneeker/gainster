@@ -5,11 +5,19 @@ import {
   getSignalById,
   getPositionBySymbol,
   upsertPosition,
+  getAccount,
 } from '@gainster/db';
+import type { Trade } from '@gainster/db';
+import { account } from '@gainster/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import '../../lib/types.js';
 import { idParamSchema } from '../../lib/schemas.js';
 import { createTradeSchema, listTradesQuerySchema } from './schemas.js';
+
+type TradeResult =
+  | { ok: true; trade: Trade }
+  | { ok: false; error: string; statusCode: number };
 
 export async function listTradesHandler(request: FastifyRequest, reply: FastifyReply) {
   const query = listTradesQuerySchema.parse(request.query);
@@ -42,21 +50,39 @@ export async function createTradeHandler(request: FastifyRequest, reply: Fastify
     }
   }
 
-  if (body.side === 'sell') {
-    const existing = getPositionBySymbol(db, body.symbol);
-    const held = existing?.quantity ?? 0;
-    if (body.quantity > held) {
-      return reply.code(422).send({
-        error: `Cannot sell ${body.quantity} shares — only ${held} held`,
-        statusCode: 422,
-      });
+  const result: TradeResult = db.transaction((tx) => {
+    const acct = getAccount(tx);
+    if (!acct) {
+      return { ok: false, error: 'Account not initialized', statusCode: 500 };
     }
-  }
 
-  const trade = db.transaction((tx) => {
-    const inserted = insertTrade(tx, body);
+    const cost = body.quantity * body.price;
+
+    if (body.side === 'buy') {
+      if (cost > acct.cash) {
+        return {
+          ok: false,
+          error: `Insufficient cash — need $${cost.toFixed(2)} but only $${acct.cash.toFixed(2)} available`,
+          statusCode: 422,
+        };
+      }
+    }
 
     const existing = getPositionBySymbol(tx, body.symbol);
+
+    if (body.side === 'sell') {
+      const held = existing?.quantity ?? 0;
+      if (body.quantity > held) {
+        return {
+          ok: false,
+          error: `Cannot sell ${body.quantity} shares — only ${held} held`,
+          statusCode: 422,
+        };
+      }
+    }
+
+    const inserted = insertTrade(tx, body);
+
     if (body.side === 'buy') {
       const oldQty = existing?.quantity ?? 0;
       const oldAvg = existing?.avgEntryPrice ?? 0;
@@ -71,10 +97,19 @@ export async function createTradeHandler(request: FastifyRequest, reply: Fastify
         currentPrice: body.price,
         unrealizedPnl: 0,
       });
+      // Deduct cash
+      tx.update(account)
+        .set({
+          cash: sql`${account.cash} - ${cost}`,
+          updatedAt: sql`(datetime('now'))`,
+        })
+        .where(eq(account.id, 1))
+        .run();
     } else {
       const oldQty = existing?.quantity ?? 0;
       const newQty = oldQty - body.quantity;
       const avgEntry = existing?.avgEntryPrice ?? body.price;
+      const realizedPnl = (body.price - avgEntry) * body.quantity;
       upsertPosition(tx, {
         symbol: body.symbol,
         quantity: newQty,
@@ -82,10 +117,26 @@ export async function createTradeHandler(request: FastifyRequest, reply: Fastify
         currentPrice: body.price,
         unrealizedPnl: (body.price - avgEntry) * newQty,
       });
+      // Add proceeds and realized P&L
+      tx.update(account)
+        .set({
+          cash: sql`${account.cash} + ${cost}`,
+          realizedPnl: sql`${account.realizedPnl} + ${realizedPnl}`,
+          updatedAt: sql`(datetime('now'))`,
+        })
+        .where(eq(account.id, 1))
+        .run();
     }
 
-    return inserted;
+    return { ok: true, trade: inserted };
   });
 
-  return reply.code(201).send(trade);
+  if (!result.ok) {
+    return reply.code(result.statusCode).send({
+      error: result.error,
+      statusCode: result.statusCode,
+    });
+  }
+
+  return reply.code(201).send(result.trade);
 }

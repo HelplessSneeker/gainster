@@ -1,5 +1,7 @@
-import { and, asc, count, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, lte, sql } from 'drizzle-orm';
 import type { DrizzleDb } from './client.js';
+import { account } from './schema/account.js';
+import type { Account } from './schema/account.js';
 import { aiSignals } from './schema/ai-signals.js';
 import type { AiSignal } from './schema/ai-signals.js';
 import { candles } from './schema/candles.js';
@@ -12,6 +14,25 @@ import { trades } from './schema/trades.js';
 import type { NewTrade, Trade } from './schema/trades.js';
 import { watchlist } from './schema/watchlist.js';
 import type { Watchlist, NewWatchlist } from './schema/watchlist.js';
+
+// ── Account ────────────────────────────────────────────────────────
+
+export function getAccount(db: DrizzleDb): Account | undefined {
+  return db.select().from(account).where(eq(account.id, 1)).get();
+}
+
+export function ensureAccount(db: DrizzleDb, initialCash: number): Account {
+  const existing = getAccount(db);
+  if (existing) return existing;
+  const rows = db
+    .insert(account)
+    .values({ id: 1, cash: initialCash, realizedPnl: 0, initialCash })
+    .returning()
+    .all();
+  return rows[0]!;
+}
+
+// ── Watchlist ──────────────────────────────────────────────────────
 
 export function getActiveWatchlistSymbols(db: DrizzleDb): string[] {
   const rows = db
@@ -240,7 +261,7 @@ export function getTradesBySignalId(db: DrizzleDb, signalId: number): Trade[] {
 // ── Positions ───────────────────────────────────────────────────────
 
 export function getAllPositions(db: DrizzleDb): Position[] {
-  return db.select().from(positions).all();
+  return db.select().from(positions).where(gt(positions.quantity, 0)).all();
 }
 
 export function getPositionBySymbol(
@@ -287,6 +308,7 @@ export function getPositionSummary(db: DrizzleDb): PositionSummary {
       positionCount: count(),
     })
     .from(positions)
+    .where(gt(positions.quantity, 0))
     .all();
 
   return {

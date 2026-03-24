@@ -48,8 +48,10 @@ describe('/api/portfolio', () => {
       const body = response.json();
       expect(body.id).toBeDefined();
       expect(body.timestamp).toBeDefined();
-      expect(body.totalValue).toBe(0);
+      expect(body.totalValue).toBe(100_000);
+      expect(body.cash).toBe(100_000);
       expect(body.invested).toBe(0);
+      expect(body.realizedPnl).toBe(0);
     });
 
     it('GET /current returns the latest snapshot', async () => {
@@ -102,9 +104,12 @@ describe('/api/portfolio', () => {
 
       expect(response.statusCode).toBe(201);
       const body = response.json();
-      // AAPL: 10 shares at $150 = $1500 invested, no unrealizedPnl initially (currentPrice = buy price)
+      // AAPL: 10 shares at $150 = $1500 invested
+      // Cash: $100,000 - $1,500 = $98,500
+      // Total: $98,500 + $1,500 = $100,000
       expect(body.invested).toBe(1500);
-      expect(body.totalValue).toBe(1500);
+      expect(body.cash).toBe(98_500);
+      expect(body.totalValue).toBe(100_000);
     });
 
     it('GET /current returns the most recent snapshot', async () => {

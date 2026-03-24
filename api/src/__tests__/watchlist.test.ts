@@ -216,7 +216,7 @@ describe('/api/watchlist', () => {
       expect(response.statusCode).toBe(404);
     });
 
-    it('allows duplicate symbols (no unique constraint)', async () => {
+    it('rejects duplicate symbols with 409', async () => {
       const first = await app.inject({
         method: 'POST',
         url: '/api/watchlist',
@@ -229,8 +229,8 @@ describe('/api/watchlist', () => {
       });
 
       expect(first.statusCode).toBe(201);
-      expect(second.statusCode).toBe(201);
-      expect(first.json().id).not.toBe(second.json().id);
+      expect(second.statusCode).toBe(409);
+      expect(second.json().error).toContain('already on the watchlist');
     });
 
     it('POST / with missing required fields returns 400', async () => {

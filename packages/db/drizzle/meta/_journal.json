@@ -6,14 +6,14 @@
       "idx": 0,
       "version": "6",
       "when": 1774013636681,
-      "tag": "0000_panoramic_magik",
+      "tag": "0000_initial_schema",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
       "when": 1774025154693,
-      "tag": "0001_hot_lady_deathstrike",
+      "tag": "0001_add_candles_table",
       "breakpoints": true
     },
     {
@@ -21,6 +21,20 @@
       "version": "6",
       "when": 1774197617181,
       "tag": "0002_add_trading_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1774378807254,
+      "tag": "0003_add_account_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1774380393928,
+      "tag": "0004_add_watchlist_symbol_unique",
       "breakpoints": true
     }
   ]

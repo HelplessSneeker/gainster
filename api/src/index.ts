@@ -1,4 +1,4 @@
-import { createDb, migrate } from '@gainster/db';
+import { createDb, migrate, ensureAccount } from '@gainster/db';
 import { loadEnv } from '@gainster/env';
 import { createTwelveDataProvider } from '@gainster/market-data';
 import { buildApp } from './app.js';
@@ -8,6 +8,7 @@ const env = loadEnv();
 
 const { db } = createDb({ dbPath: env.GAINSTER_DB_PATH });
 migrate(db);
+ensureAccount(db, env.INITIAL_CASH);
 
 const marketData = createTwelveDataProvider({
   apiKey: env.TWELVEDATA_API_KEY,

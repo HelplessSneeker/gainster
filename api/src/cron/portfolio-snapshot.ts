@@ -3,6 +3,7 @@ import {
   getPositionSummary,
   updatePositionPrice,
   insertPortfolioSnapshot,
+  getAccount,
 } from '@gainster/db';
 import type { DrizzleDb } from '@gainster/db';
 import type { MarketDataProvider } from '@gainster/market-data';
@@ -17,14 +18,15 @@ export interface SnapshotConfig {
 export async function takePortfolioSnapshot(config: SnapshotConfig): Promise<void> {
   const { db, marketData, log } = config;
 
-  const allPositions = getAllPositions(db);
-  if (allPositions.length === 0) {
-    log.info('No positions, skipping portfolio snapshot');
+  const acct = getAccount(db);
+  if (!acct) {
+    log.error('Account not initialized, skipping portfolio snapshot');
     return;
   }
 
+  const allPositions = getAllPositions(db);
+
   for (const pos of allPositions) {
-    if (pos.quantity <= 0) continue;
     try {
       const quote = await marketData.getQuote(pos.symbol);
       updatePositionPrice(db, pos.symbol, quote.price);
@@ -37,11 +39,11 @@ export async function takePortfolioSnapshot(config: SnapshotConfig): Promise<voi
 
   const snapshot = insertPortfolioSnapshot(db, {
     timestamp: new Date().toISOString(),
-    totalValue: summary.totalInvested + summary.totalUnrealizedPnl,
-    cash: 0, // TODO: track cash balance
+    totalValue: acct.cash + summary.totalInvested + summary.totalUnrealizedPnl,
+    cash: acct.cash,
     invested: summary.totalInvested,
     unrealizedPnl: summary.totalUnrealizedPnl,
-    realizedPnl: 0, // TODO: compute from closed trades
+    realizedPnl: acct.realizedPnl,
   });
 
   log.info({ snapshotId: snapshot.id, totalValue: snapshot.totalValue }, 'Portfolio snapshot taken');

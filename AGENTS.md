@@ -11,7 +11,7 @@ api/                    # Fastify REST API (Zod validation, plugin architecture,
   package.json          # Deps: fastify v5, zod, fastify-plugin, node-cron, @gainster/db, @gainster/env, @gainster/market-data
   tsconfig.json         # Strict ESM config (nodenext)
   src/
-    index.ts            # Entry point: env → db → market-data → app → cron → listen
+    index.ts            # Entry point: env → db → migrate → ensureAccount → market-data → app → cron → listen
     app.ts              # buildApp() factory — registers plugins + route groups
     __tests__/
       helpers.ts        # Test utilities: in-memory DB, mock market data, test app factory
@@ -32,12 +32,12 @@ api/                    # Fastify REST API (Zod validation, plugin architecture,
       error-handler.ts  # Global setErrorHandler (ZodError→400, MarketDataError→502, etc.)
     routes/
       health.ts         # GET /health
-      watchlist/        # CRUD: GET/POST/PATCH/DELETE /api/watchlist
-      candles/          # GET /api/candles/:symbol, POST /api/candles/backfill
-      trades/           # GET/POST /api/trades (creates/updates positions atomically)
-      positions/        # GET /api/positions, /api/positions/summary
-      portfolio/        # GET/POST /api/portfolio/snapshots, /api/portfolio/current
-      signals/          # GET /api/signals (read-only, AI signal generation is future)
+      watchlist/        # GET/POST/PATCH/DELETE /api/watchlist, GET /api/watchlist/:id
+      candles/          # GET /api/candles/intervals, GET /api/candles/:symbol, POST /api/candles/backfill
+      trades/           # GET/POST /api/trades, GET /api/trades/:id (creates/updates positions atomically)
+      positions/        # GET /api/positions, GET /api/positions/summary, GET /api/positions/:symbol
+      portfolio/        # GET/POST /api/portfolio/snapshots, GET /api/portfolio/current
+      signals/          # GET /api/signals, GET /api/signals/:id, GET /api/signals/:id/trades
     cron/
       index.ts          # Registers all cron jobs (Europe/Vienna timezone)
       market-status.ts  # isMarketOpen() — US Eastern market hours check
@@ -59,7 +59,7 @@ packages/
       schema.ts         # Zod schema defining all env vars
   db/                   # Shared database package (Drizzle ORM + better-sqlite3)
     src/
-      schema/           # Drizzle table definitions (watchlist, candles, ai_signals, trades, positions, portfolio_snapshots)
+      schema/           # Drizzle table definitions (account, watchlist, candles, ai_signals, trades, positions, portfolio_snapshots)
       queries.ts        # All query helpers (CRUD for each domain, paginated lists, aggregates)
       client.ts         # createDb() → { db, dbPath }
       connection.ts     # createConnection() — better-sqlite3 with WAL + FK
@@ -214,7 +214,7 @@ export async function createWatchlist(request: FastifyRequest, reply: FastifyRep
 All database access goes through `@gainster/db`. No other package should depend on `better-sqlite3` directly.
 
 - **Drizzle ORM** for type-safe queries: `db.select().from(watchlist).where(eq(watchlist.symbol, 'AAPL')).all()`.
-- **Schema definitions** in `packages/db/src/schema/` — each table in its own file, barrel-exported via `index.ts`.
+- **Schema definitions** in `packages/db/src/schema/` — each table in its own file (`account.ts`, `watchlist.ts`, `candles.ts`, `ai-signals.ts`, `trades.ts`, `positions.ts`, `portfolio-snapshots.ts`), barrel-exported via `index.ts`.
 - **Two subpath exports**: `@gainster/db` (client + migrations + schema) and `@gainster/db/schema` (schema-only, no db connection).
 - **WAL mode + foreign keys** enabled automatically by `createConnection()`.
 - **`createDb(options?)` returns `{ db, dbPath }`** — callers pass `dbPath` explicitly (from `loadEnv()` or CLI args). Default: `'gainster-db'` relative to cwd. Warns to stderr if no path provided.

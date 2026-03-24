@@ -3,6 +3,8 @@ export type { DrizzleDb, CreateDbResult } from './client.js';
 export { createConnection } from './connection.js';
 export type { ConnectionOptions, ConnectionResult } from './connection.js';
 export { migrate } from './migrate.js';
+export { account } from './schema/index.js';
+export type { Account, NewAccount } from './schema/index.js';
 export { watchlist } from './schema/index.js';
 export type { Watchlist, NewWatchlist } from './schema/index.js';
 export { candles } from './schema/index.js';
@@ -39,6 +41,8 @@ export {
   listSnapshots,
   listSignals,
   getSignalById,
+  getAccount,
+  ensureAccount,
 } from './queries.js';
 export type {
   UpsertCandlesResult,

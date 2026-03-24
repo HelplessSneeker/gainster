@@ -3,6 +3,7 @@ import {
   getLatestSnapshot,
   insertPortfolioSnapshot,
   getPositionSummary,
+  getAccount,
 } from '@gainster/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import '../../lib/types.js';
@@ -29,15 +30,20 @@ export async function getCurrentSnapshotHandler(request: FastifyRequest, reply: 
 
 export async function createSnapshotHandler(request: FastifyRequest, reply: FastifyReply) {
   const db = request.server.db;
+  const acct = getAccount(db);
+  if (!acct) {
+    return reply.code(500).send({ error: 'Account not initialized', statusCode: 500 });
+  }
+
   const summary = getPositionSummary(db);
 
   const snapshot = insertPortfolioSnapshot(db, {
     timestamp: new Date().toISOString(),
-    totalValue: summary.totalInvested + summary.totalUnrealizedPnl,
-    cash: 0, // TODO: track cash balance
+    totalValue: acct.cash + summary.totalInvested + summary.totalUnrealizedPnl,
+    cash: acct.cash,
     invested: summary.totalInvested,
     unrealizedPnl: summary.totalUnrealizedPnl,
-    realizedPnl: 0, // TODO: compute from closed trades
+    realizedPnl: acct.realizedPnl,
   });
 
   return reply.code(201).send(snapshot);

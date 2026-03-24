@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `watchlist_symbol_idx` ON `watchlist` (`symbol`);

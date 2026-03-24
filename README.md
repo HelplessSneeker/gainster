@@ -80,7 +80,7 @@ pnpm dev
 
 - [Drizzle ORM](https://orm.drizzle.team/) — type-safe SQL queries and schema definitions
 - [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — SQLite driver (WAL mode)
-- Tables: `watchlist`, `candles`, `ai_signals`, `trades`, `positions`, `portfolio_snapshots`
+- Tables: `account`, `watchlist`, `candles`, `ai_signals`, `trades`, `positions`, `portfolio_snapshots`
 
 ### Web (`@gainster/web`)
 
