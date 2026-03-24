@@ -7,7 +7,7 @@ Built with a **Fastify** REST API, **Next.js 16** dashboard, **SQLite** database
 ## Monorepo Structure
 
 ```
-api/                  — Fastify REST API (TypeScript, ESM, strict mode) — scaffolded, no source yet
+api/                  — Fastify REST API (TypeScript, ESM, Zod validation, cron jobs)
 web/                  — Next.js 16 dashboard (App Router, Tailwind v4, shadcn/ui)
 packages/env/         — Centralized env loading + validation (zod)
 packages/db/          — Shared database package (Drizzle ORM + SQLite)
@@ -61,21 +61,26 @@ pnpm dev
 | `pnpm db:studio` | Open Drizzle Studio |
 | `pnpm backfill` | Backfill candle data (all active watchlist tickers, 5min) |
 | `pnpm backfill -- -s AAPL -i 1day` | Backfill specific symbol/interval |
+| `pnpm test` | Run API tests (vitest) |
+| `pnpm test:api` | Run API tests (vitest, explicit filter) |
 | `pnpm --filter @gainster/web lint` | Lint the web package |
 
 ## Tech Stack
 
 ### API (`@gainster/api`)
 
-- [Fastify](https://fastify.dev/) v5 — HTTP framework
-- `@gainster/db` — shared database access
+- [Fastify](https://fastify.dev/) v5 — HTTP framework with plugin architecture
+- [Zod](https://zod.dev/) — request/response validation at route boundaries
+- [node-cron](https://github.com/node-cron/node-cron) — scheduled candle polling and portfolio snapshots
+- `@gainster/db`, `@gainster/env`, `@gainster/market-data` — workspace dependencies
+- [Vitest](https://vitest.dev/) — unit and integration tests
 - TypeScript (strict mode, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`)
 
 ### Database (`@gainster/db`)
 
 - [Drizzle ORM](https://orm.drizzle.team/) — type-safe SQL queries and schema definitions
 - [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — SQLite driver (WAL mode)
-- Tables: `watchlist` (tracked symbols), `candles` (OHLCV time series)
+- Tables: `watchlist`, `candles`, `ai_signals`, `trades`, `positions`, `portfolio_snapshots`
 
 ### Web (`@gainster/web`)
 
@@ -104,7 +109,7 @@ pnpm dev
 
 ## Environment Variables
 
-Store all env vars in the root `.env` file. Use `loadEnv()` from `@gainster/env` to load and validate them.
+Store all env vars in the root `.env` file. Always use `loadEnv()` from `@gainster/env` to access them — never read `process.env` directly.
 
 | Variable | Description |
 |---|---|
@@ -112,6 +117,8 @@ Store all env vars in the root `.env` file. Use `loadEnv()` from `@gainster/env`
 | `TWELVEDATA_RPM` | Requests per minute override (default 8) |
 | `TWELVEDATA_BURST` | Burst concurrency override (default 1) |
 | `GAINSTER_DB_PATH` | SQLite file path (default `gainster-db` in cwd) |
+| `API_PORT` | Fastify server port (default 3001) |
+| `INITIAL_CASH` | Starting paper trading cash balance (default 100000) |
 
 ## License
 

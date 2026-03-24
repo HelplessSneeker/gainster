@@ -15,5 +15,38 @@ export { positions } from './schema/index.js';
 export type { Position, NewPosition } from './schema/index.js';
 export { portfolioSnapshots } from './schema/index.js';
 export type { PortfolioSnapshot, NewPortfolioSnapshot } from './schema/index.js';
-export { getActiveWatchlistSymbols, upsertCandles, getCandleDatetimes } from './queries.js';
-export type { UpsertCandlesResult } from './queries.js';
+export {
+  getActiveWatchlistSymbols,
+  upsertCandles,
+  getCandleDatetimes,
+  getCandles,
+  getAllWatchlistItems,
+  getWatchlistItemById,
+  insertWatchlistItem,
+  updateWatchlistItem,
+  deleteWatchlistItem,
+  insertTrade,
+  getTradeById,
+  listTrades,
+  getTradesBySignalId,
+  getAllPositions,
+  getPositionBySymbol,
+  upsertPosition,
+  getPositionSummary,
+  updatePositionPrice,
+  insertPortfolioSnapshot,
+  getLatestSnapshot,
+  listSnapshots,
+  listSignals,
+  getSignalById,
+} from './queries.js';
+export type {
+  UpsertCandlesResult,
+  ListWatchlistOptions,
+  GetCandlesOptions,
+  PaginatedResult,
+  ListTradesOptions,
+  PositionSummary,
+  ListSnapshotsOptions,
+  ListSignalsOptions,
+} from './queries.js';

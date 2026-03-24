@@ -7,9 +7,42 @@ Stock portfolio tracker & analysis platform. Fastify API + Next.js dashboard + S
 pnpm workspaces with six packages:
 
 ```
-api/                    # Fastify REST API (scaffolded, no source yet)
-  package.json          # Dependencies: fastify v5, @fastify/cors, @gainster/db
+api/                    # Fastify REST API (Zod validation, plugin architecture, cron jobs)
+  package.json          # Deps: fastify v5, zod, fastify-plugin, node-cron, @gainster/db, @gainster/env, @gainster/market-data
   tsconfig.json         # Strict ESM config (nodenext)
+  src/
+    index.ts            # Entry point: env → db → market-data → app → cron → listen
+    app.ts              # buildApp() factory — registers plugins + route groups
+    __tests__/
+      helpers.ts        # Test utilities: in-memory DB, mock market data, test app factory
+      health.test.ts    # Tests for GET /health
+      watchlist.test.ts # Tests for /api/watchlist routes
+      candles.test.ts   # Tests for /api/candles routes
+      trades.test.ts    # Tests for /api/trades routes
+      positions.test.ts # Tests for /api/positions routes
+      portfolio.test.ts # Tests for /api/portfolio routes
+      signals.test.ts   # Tests for /api/signals routes
+    lib/
+      types.ts          # Fastify declaration merging (db, marketData decorators)
+      schemas.ts        # Shared Zod primitives (pagination, symbol, intervals, etc.)
+      candle-mapper.ts  # Market candle → NewCandle transformer
+    plugins/
+      db.ts             # Decorates Fastify with db instance (fastify-plugin)
+      market-data.ts    # Decorates Fastify with MarketDataProvider
+      error-handler.ts  # Global setErrorHandler (ZodError→400, MarketDataError→502, etc.)
+    routes/
+      health.ts         # GET /health
+      watchlist/        # CRUD: GET/POST/PATCH/DELETE /api/watchlist
+      candles/          # GET /api/candles/:symbol, POST /api/candles/backfill
+      trades/           # GET/POST /api/trades (creates/updates positions atomically)
+      positions/        # GET /api/positions, /api/positions/summary
+      portfolio/        # GET/POST /api/portfolio/snapshots, /api/portfolio/current
+      signals/          # GET /api/signals (read-only, AI signal generation is future)
+    cron/
+      index.ts          # Registers all cron jobs (Europe/Vienna timezone)
+      market-status.ts  # isMarketOpen() — US Eastern market hours check
+      candle-poll.ts    # Every 5 min during market hours: poll candles for watchlist
+      portfolio-snapshot.ts  # Daily at market close: update prices + snapshot
 web/                    # Next.js 16 dashboard (App Router, Tailwind v4, shadcn/ui)
   src/
     app/                # App Router routes and layouts
@@ -27,10 +60,11 @@ packages/
   db/                   # Shared database package (Drizzle ORM + better-sqlite3)
     src/
       schema/           # Drizzle table definitions (watchlist, candles, ai_signals, trades, positions, portfolio_snapshots)
+      queries.ts        # All query helpers (CRUD for each domain, paginated lists, aggregates)
       client.ts         # createDb() → { db, dbPath }
       connection.ts     # createConnection() — better-sqlite3 with WAL + FK
       migrate.ts        # migrate() — applies pending migrations
-      index.ts          # Barrel export
+      index.ts          # Barrel export (schema + queries + client)
     drizzle/            # Generated migration SQL files
     scripts/
       migrate.ts        # Standalone migration runner (pnpm db:migrate)
@@ -44,12 +78,20 @@ packages/
       factory.ts        # createTwelveDataProvider(config) — accepts explicit config
       providers/
         twelvedata/     # TwelveData implementation (native fetch, no SDK)
+          client.ts     # TwelveDataProvider class
+          mapper.ts     # Response mappers (quote, candles, api usage, error detection)
+          index.ts      # Barrel re-export
     scripts/
       smoke.ts          # Smoke test — fetches a quote via the provider
   scripts/              # CLI scripts (backfill, etc.)
     src/
       backfill.ts       # Main backfill entry — uses loadEnv(), passes config explicitly
-      lib/              # Helpers: fetch-candles, upsert-candles, detect-gaps, etc.
+      lib/
+        fetch-candles.ts   # Fetch candles from market data provider
+        upsert-candles.ts  # Batch upsert candles into DB
+        detect-gaps.ts     # Detect gaps in candle data
+        parse-args.ts      # CLI argument parser (--symbol, --interval)
+        log.ts             # Logging utility
 ```
 
 ## Build / Dev / Test Commands
@@ -74,12 +116,14 @@ pnpm db:studio          # Open Drizzle Studio (interactive DB browser)
 pnpm backfill           # Backfill candle data from TwelveData
 pnpm backfill -- -s AAPL -i 1day  # Backfill specific symbol/interval
 
+# Testing (vitest — API package only so far)
+pnpm test                                    # Run all API tests
+pnpm test:api                                # Same as above (explicit filter)
+pnpm --filter @gainster/api test -- path/to/file.test.ts  # Run a single test file
+
 # Linting (web only — ESLint + eslint-config-next)
 pnpm --filter @gainster/web lint
 ```
-
-No test framework yet. When added (prefer `vitest`), run a single test with:
-`pnpm --filter @gainster/api test -- path/to/file.test.ts`
 
 **Package manager:** pnpm v10.28.2. Always `pnpm add`, never `npm install` / `yarn add`.
 To add a dep to a specific package: `pnpm --filter @gainster/web add <pkg>`.
@@ -137,21 +181,33 @@ import { cn } from "@/lib/utils";
 
 ## Fastify Patterns
 
-Each route file exports a Fastify plugin:
+Each domain is a self-contained plugin with co-located `schemas.ts`, `handlers.ts`, and `index.ts`:
 
 ```typescript
+// routes/watchlist/index.ts — route registration
 import type { FastifyInstance } from 'fastify';
+import { listWatchlist, createWatchlist } from './handlers.js';
 
-export default async function portfolioRoutes(fastify: FastifyInstance) {
-  fastify.get('/api/portfolio', {
-    schema: { response: { 200: { type: 'array', items: { /* JSON Schema */ } } } },
-  }, async (request, reply) => {
-    // handler
-  });
+export default async function watchlistRoutes(fastify: FastifyInstance) {
+  fastify.get('/', listWatchlist);
+  fastify.post('/', createWatchlist);
+}
+
+// routes/watchlist/handlers.ts — business logic with Zod validation
+import { createWatchlistSchema } from './schemas.js';
+
+export async function createWatchlist(request: FastifyRequest, reply: FastifyReply) {
+  const body = createWatchlistSchema.parse(request.body);  // throws ZodError → 400
+  const item = insertWatchlistItem(request.server.db, body);
+  return reply.code(201).send(item);
 }
 ```
 
-Register via `fastify.register(plugin)`. Always define `schema` on routes for validation/serialization. Use `async` handlers — no callbacks. Log with `fastify.log.error(err)` — never `console.log`.
+- **Zod for input validation** — `.parse()` in handlers, caught by global error handler (ZodError → 400).
+- **`fastify-plugin`** for shared decorators (`db`, `marketData`) — breaks Fastify's encapsulation so child plugins can access them.
+- Routes registered with prefix: `app.register(watchlistRoutes, { prefix: '/api/watchlist' })`.
+- Access shared services via `request.server.db` and `request.server.marketData`.
+- Use `async` handlers — no callbacks. Log with `fastify.log.error(err)` — never `console.log`.
 
 ## Database (`packages/db/` — Drizzle ORM + SQLite)
 
@@ -191,7 +247,9 @@ All database access goes through `@gainster/db`. No other package should depend 
 
 ## Environment Variables
 
-All env vars live in the root `.env` file. Use `loadEnv()` from `@gainster/env` to load and validate — returns a typed, frozen `Env` object. Library packages (`db`, `market-data`) never read `process.env` directly; callers pass values explicitly.
+All env vars live in the root `.env` file. **Always use `loadEnv()` from `@gainster/env`** — never read `process.env` directly. The env package validates all variables against a Zod schema at `packages/env/src/schema.ts` and returns a typed, frozen `Env` object. Library packages (`db`, `market-data`) accept explicit config objects; callers pass values from the `Env` object.
+
+When adding a new env var, add it to `packages/env/src/schema.ts` first, then rebuild with `pnpm build:env`.
 
 | Variable              | Required | Default        | Description                    |
 |-----------------------|----------|----------------|--------------------------------|
@@ -199,11 +257,14 @@ All env vars live in the root `.env` file. Use `loadEnv()` from `@gainster/env` 
 | `TWELVEDATA_RPM`      | No       | `8`            | Requests per minute            |
 | `TWELVEDATA_BURST`    | No       | `1`            | Burst concurrency              |
 | `GAINSTER_DB_PATH`    | No       | `gainster-db`  | SQLite file path               |
+| `API_PORT`            | No       | `3001`         | Fastify server port            |
+| `INITIAL_CASH`        | No       | `100000`       | Starting paper trading cash    |
 
 ## Error Handling
 
-- In route handlers: `reply.code(N).send({ error })` — not raw `throw`.
-- Validate at the schema level; trust validated data inside handlers.
+- **Global error handler** (`api/src/plugins/error-handler.ts`) catches all thrown errors and maps them to consistent `{ error, statusCode, details? }` responses: `ZodError` → 400, `RateLimitExceededError` → 429, `MarketDataError` → 502, unknown → 500.
+- **Zod validation** in handlers uses `.parse()` which throws on invalid input — the global handler converts it to a 400.
+- **Not-found cases** use explicit `reply.code(404).send(...)` in handlers.
 - External API calls: always try/catch with meaningful messages.
 - Never use `any` — use `unknown` and narrow, or define proper types.
 

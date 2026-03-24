@@ -1,6 +1,15 @@
 Stage all changes (tracked and untracked), then create a single commit with a descriptive message.
 
-Rules:
+## Instructions
+
+Use the **Git Workflow Master** agent (subagent_type: "Git Workflow Master") to perform this task. Launch the agent with the following prompt:
+
+---
+
+Stage all changes and create a single git commit with a descriptive message.
+
+### Steps
+
 1. Run `git status` and `git diff` (staged + unstaged) to understand all changes.
 2. Run `git log --oneline -5` to match the repo's commit message style.
 3. Stage all changes with `git add -A`.
