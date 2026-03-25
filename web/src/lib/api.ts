@@ -70,8 +70,8 @@ export interface PaginatedResponse<T> {
 
 // --- Fetcher ---
 
-async function fetchApi<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`)
+async function fetchApi<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { signal })
   if (!res.ok) {
     throw new Error(`API error: ${res.status} ${res.statusText}`)
   }
@@ -80,40 +80,55 @@ async function fetchApi<T>(path: string): Promise<T> {
 
 // --- API functions ---
 
-export function getWatchlist(active?: boolean): Promise<WatchlistItem[]> {
+export function getWatchlist(active?: boolean, signal?: AbortSignal): Promise<WatchlistItem[]> {
   const params = active !== undefined ? `?active=${active}` : ""
-  return fetchApi<WatchlistItem[]>(`/api/watchlist${params}`)
+  return fetchApi<WatchlistItem[]>(`/api/watchlist${params}`, signal)
 }
 
 export function getCandles(
   symbol: string,
   interval = "1day",
   limit = 50,
+  signal?: AbortSignal,
 ): Promise<PaginatedResponse<Candle>> {
   return fetchApi<PaginatedResponse<Candle>>(
     `/api/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=${limit}`,
+    signal,
+  )
+}
+
+export function getLatestCandles(
+  symbols: string[],
+  interval = "1day",
+  signal?: AbortSignal,
+): Promise<Candle[]> {
+  return fetchApi<Candle[]>(
+    `/api/candles/latest?symbols=${symbols.map(encodeURIComponent).join(",")}&interval=${interval}`,
+    signal,
   )
 }
 
 export function getTrades(
   limit = 50,
   offset = 0,
+  signal?: AbortSignal,
 ): Promise<PaginatedResponse<Trade>> {
   return fetchApi<PaginatedResponse<Trade>>(
     `/api/trades?limit=${limit}&offset=${offset}`,
+    signal,
   )
 }
 
-export function getPositions(): Promise<Position[]> {
-  return fetchApi<Position[]>("/api/positions")
+export function getPositions(signal?: AbortSignal): Promise<Position[]> {
+  return fetchApi<Position[]>("/api/positions", signal)
 }
 
-export function getPositionSummary(): Promise<PositionSummary> {
-  return fetchApi<PositionSummary>("/api/positions/summary")
+export function getPositionSummary(signal?: AbortSignal): Promise<PositionSummary> {
+  return fetchApi<PositionSummary>("/api/positions/summary", signal)
 }
 
-export async function getPortfolioCurrent(): Promise<PortfolioSnapshot | null> {
-  const res = await fetch(`${API_BASE}/api/portfolio/current`)
+export async function getPortfolioCurrent(signal?: AbortSignal): Promise<PortfolioSnapshot | null> {
+  const res = await fetch(`${API_BASE}/api/portfolio/current`, { signal })
   if (res.status === 404) return null
   if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`)
   return res.json() as Promise<PortfolioSnapshot>
@@ -121,8 +136,10 @@ export async function getPortfolioCurrent(): Promise<PortfolioSnapshot | null> {
 
 export function getPortfolioSnapshots(
   limit = 500,
+  signal?: AbortSignal,
 ): Promise<PaginatedResponse<PortfolioSnapshot>> {
   return fetchApi<PaginatedResponse<PortfolioSnapshot>>(
     `/api/portfolio/snapshots?limit=${limit}`,
+    signal,
   )
 }

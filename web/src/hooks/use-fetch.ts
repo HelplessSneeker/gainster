@@ -7,10 +7,11 @@ interface UseFetchResult<T> {
   error: Error | null
   isLoading: boolean
   refresh: () => void
+  staleError: Error | null
 }
 
 export function useFetch<T>(
-  fetcher: () => Promise<T>,
+  fetcher: (signal: AbortSignal) => Promise<T>,
   deps: unknown[] = [],
   refreshInterval?: number,
 ): UseFetchResult<T> {
@@ -26,27 +27,26 @@ export function useFetch<T>(
     if (!hasDataRef.current) {
       setIsLoading(true)
     }
-    let cancelled = false
+    const controller = new AbortController()
     fetcherRef
-      .current()
+      .current(controller.signal)
       .then((result) => {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setData(result)
           setError(null)
           hasDataRef.current = true
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err : new Error(String(err)))
-        }
+        if (controller.signal.aborted) return
+        setError(err instanceof Error ? err : new Error(String(err)))
       })
       .finally(() => {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setIsLoading(false)
         }
       })
-    return () => { cancelled = true }
+    return () => { controller.abort() }
   }, [])
 
   useEffect(() => {
@@ -61,5 +61,5 @@ export function useFetch<T>(
     return () => clearInterval(id)
   }, [refreshInterval, doFetch])
 
-  return { data, error, isLoading, refresh: doFetch }
+  return { data, error, isLoading, refresh: doFetch, staleError: data && error ? error : null }
 }

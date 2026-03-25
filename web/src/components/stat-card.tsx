@@ -10,7 +10,18 @@ interface StatCardProps {
 
 export function StatCard({ title, value, description, trend }: StatCardProps) {
   return (
-    <Card size="sm">
+    <Card
+      size="sm"
+      aria-label={
+        trend === "up" ? `${title}: ${value}, gain`
+        : trend === "down" ? `${title}: ${value}, loss`
+        : `${title}: ${value}`
+      }
+      className={cn(
+        trend === "up" && "bg-gain-muted",
+        trend === "down" && "bg-loss-muted",
+      )}
+    >
       <CardHeader>
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
@@ -19,9 +30,9 @@ export function StatCard({ title, value, description, trend }: StatCardProps) {
       <CardContent>
         <div
           className={cn(
-            "text-2xl font-bold tabular-nums",
-            trend === "up" && "text-green-600",
-            trend === "down" && "text-red-600",
+            "text-xl font-bold font-mono tabular-nums md:text-2xl",
+            trend === "up" && "text-gain",
+            trend === "down" && "text-loss",
           )}
         >
           {value}

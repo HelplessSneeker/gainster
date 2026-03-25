@@ -28,6 +28,11 @@ export function formatCurrency(value: number): string {
   return currencyFmt.format(value)
 }
 
+export function formatSignedCurrency(value: number): string {
+  if (value > 0) return `+${currencyFmt.format(value)}`
+  return currencyFmt.format(value)
+}
+
 const numberFmt0 = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
@@ -60,6 +65,13 @@ export function formatNumber(value: number, decimals?: number): string {
 export function formatPercent(value: number): string {
   const sign = value >= 0 ? "+" : ""
   return `${sign}${value.toFixed(2)}%`
+}
+
+export function formatChange(open: number, close: number): string {
+  const change = close - open
+  const pct = open !== 0 ? (change / open) * 100 : 0
+  const sign = pct >= 0 ? "+" : ""
+  return `${sign}${pct.toFixed(2)}%`
 }
 
 export function formatDate(iso: string): string {

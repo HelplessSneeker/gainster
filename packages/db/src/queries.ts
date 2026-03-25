@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gt, gte, lte, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, inArray, lte, sql } from 'drizzle-orm';
 import type { DrizzleDb } from './client.js';
 import { account } from './schema/account.js';
 import type { Account } from './schema/account.js';
@@ -81,6 +81,57 @@ export function getCandleDatetimes(
     .orderBy(asc(candles.datetime))
     .all();
   return rows.map((r) => r.datetime);
+}
+
+// ── Batch candle queries ────────────────────────────────────────────
+
+/**
+ * Get the most recent candle for each of the given symbols at the specified interval.
+ * Single query with subquery join — eliminates N+1 fetches.
+ */
+export function getLatestCandlesBySymbols(
+  db: DrizzleDb,
+  symbols: string[],
+  interval: string,
+): Candle[] {
+  if (symbols.length === 0) return [];
+
+  const latestDates = db
+    .select({
+      symbol: candles.symbol,
+      maxDt: sql<string>`max(${candles.datetime})`.as('max_dt'),
+    })
+    .from(candles)
+    .where(and(
+      inArray(candles.symbol, symbols),
+      eq(candles.interval, interval),
+    ))
+    .groupBy(candles.symbol)
+    .as('latest_dates');
+
+  return db
+    .select({
+      id: candles.id,
+      symbol: candles.symbol,
+      interval: candles.interval,
+      datetime: candles.datetime,
+      open: candles.open,
+      high: candles.high,
+      low: candles.low,
+      close: candles.close,
+      volume: candles.volume,
+      createdAt: candles.createdAt,
+    })
+    .from(candles)
+    .innerJoin(
+      latestDates,
+      and(
+        eq(candles.symbol, latestDates.symbol),
+        eq(candles.datetime, latestDates.maxDt),
+      ),
+    )
+    .where(eq(candles.interval, interval))
+    .all();
 }
 
 // ── Candle queries ──────────────────────────────────────────────────

@@ -7,23 +7,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PortfolioTab } from "@/components/portfolio-tab"
 import { WatchlistTab } from "@/components/watchlist-tab"
 import { TradesTab } from "@/components/trades-tab"
+import { StaleDataAnnouncer } from "@/components/stale-data-announcer"
 
 export function DashboardShell() {
-  const portfolio = useFetch(getPortfolioCurrent, [], 60_000)
+  const portfolio = useFetch((signal) => getPortfolioCurrent(signal), [], 60_000)
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6">
+    <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6 md:py-6">
+      <StaleDataAnnouncer error={portfolio.staleError} />
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-lg font-semibold">Gainster</h1>
         {portfolio.data && (
-          <span className="text-sm tabular-nums text-muted-foreground">
+          <span className="text-sm font-mono tabular-nums text-muted-foreground">
             Portfolio: {formatCurrency(portfolio.data.totalValue)}
           </span>
         )}
       </header>
 
       <Tabs defaultValue="portfolio">
-        <TabsList>
+        <TabsList className="w-full min-h-11 sm:min-h-0">
           <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
           <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
           <TabsTrigger value="trades">Trades</TabsTrigger>

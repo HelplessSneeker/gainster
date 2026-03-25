@@ -1,15 +1,19 @@
 "use client"
 
+import { lazy, Suspense } from "react"
 import { useFetch } from "@/hooks/use-fetch"
 import {
   getPortfolioSnapshots,
   getPositions,
 } from "@/lib/api"
 import type { PortfolioSnapshot } from "@/lib/api"
-import { formatCurrency } from "@/components/formatters"
+import { formatCurrency, formatSignedCurrency } from "@/components/formatters"
 import { StatCard } from "@/components/stat-card"
-import { EquityChart } from "@/components/equity-chart"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+
+const EquityChart = lazy(() =>
+  import("@/components/equity-chart").then((m) => ({ default: m.EquityChart }))
+)
 import {
   Table,
   TableBody,
@@ -20,6 +24,7 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { StaleDataAnnouncer } from "@/components/stale-data-announcer"
 
 function trendFor(value: number): "up" | "down" | "neutral" {
   if (value > 0) return "up"
@@ -35,15 +40,15 @@ interface PortfolioTabProps {
 
 export function PortfolioTab({ portfolio, portfolioLoading, portfolioError }: PortfolioTabProps) {
   const snapshots = useFetch(
-    () => getPortfolioSnapshots(500).then((r) => r.data),
+    (signal) => getPortfolioSnapshots(500, signal).then((r) => r.data),
     [],
   )
-  const positions = useFetch(getPositions, [], 60_000)
+  const positions = useFetch((signal) => getPositions(signal), [], 60_000)
 
   if (portfolioError) {
     return (
-      <div className="py-12 text-center text-muted-foreground">
-        Cannot connect to API server. Make sure it is running on port 3001.
+      <div role="status" aria-live="polite" className="py-12 text-center text-muted-foreground">
+        Unable to connect to the API server. Start it with pnpm dev:api and refresh.
       </div>
     )
   }
@@ -52,6 +57,7 @@ export function PortfolioTab({ portfolio, portfolioLoading, portfolioError }: Po
 
   return (
     <div className="space-y-6">
+      <StaleDataAnnouncer error={positions.staleError} />
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {portfolioLoading && !snap ? (
@@ -77,18 +83,18 @@ export function PortfolioTab({ portfolio, portfolioLoading, portfolioError }: Po
             />
             <StatCard
               title="Unrealized P&L"
-              value={formatCurrency(snap.unrealizedPnl)}
+              value={formatSignedCurrency(snap.unrealizedPnl)}
               trend={trendFor(snap.unrealizedPnl)}
             />
             <StatCard
               title="Realized P&L"
-              value={formatCurrency(snap.realizedPnl)}
+              value={formatSignedCurrency(snap.realizedPnl)}
               trend={trendFor(snap.realizedPnl)}
             />
           </>
         ) : (
-          <div className="col-span-full py-6 text-center text-muted-foreground">
-            No portfolio snapshots yet. Create one via POST /api/portfolio/snapshots.
+          <div role="status" aria-live="polite" className="col-span-full py-6 text-center text-muted-foreground">
+            No portfolio data yet. Your portfolio summary will appear here as you start trading.
           </div>
         )}
       </div>
@@ -96,16 +102,18 @@ export function PortfolioTab({ portfolio, portfolioLoading, portfolioError }: Po
       {/* Equity curve */}
       <Card>
         <CardHeader>
-          <CardTitle>Equity Curve</CardTitle>
+          <h2 data-slot="card-title" className="text-base leading-snug font-medium">Equity Curve</h2>
         </CardHeader>
         <CardContent>
           {snapshots.isLoading && !snapshots.data ? (
             <Skeleton className="h-[300px] w-full" />
           ) : snapshots.data ? (
-            <EquityChart data={snapshots.data} />
+            <Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
+              <EquityChart data={snapshots.data} />
+            </Suspense>
           ) : (
-            <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-              No snapshot data available.
+            <div role="status" aria-live="polite" className="flex h-[300px] items-center justify-center text-muted-foreground">
+              No equity data to display yet.
             </div>
           )}
         </CardContent>
@@ -114,7 +122,7 @@ export function PortfolioTab({ portfolio, portfolioLoading, portfolioError }: Po
       {/* Open positions */}
       <Card>
         <CardHeader>
-          <CardTitle>Open Positions</CardTitle>
+          <h2 data-slot="card-title" className="text-base leading-snug font-medium">Open Positions</h2>
         </CardHeader>
         <CardContent>
           {positions.isLoading && !positions.data ? (
@@ -125,6 +133,7 @@ export function PortfolioTab({ portfolio, portfolioLoading, portfolioError }: Po
             </div>
           ) : positions.data && positions.data.length > 0 ? (
             <Table>
+              <caption className="sr-only">Open positions</caption>
               <TableHeader>
                 <TableRow>
                   <TableHead>Symbol</TableHead>
@@ -138,31 +147,31 @@ export function PortfolioTab({ portfolio, portfolioLoading, portfolioError }: Po
                 {positions.data.map((pos) => (
                   <TableRow key={pos.id}>
                     <TableCell className="font-medium">{pos.symbol}</TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-right font-mono tabular-nums">
                       {pos.quantity}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-right font-mono tabular-nums">
                       {formatCurrency(pos.avgEntryPrice)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-right font-mono tabular-nums">
                       {formatCurrency(pos.currentPrice)}
                     </TableCell>
                     <TableCell
                       className={cn(
-                        "text-right tabular-nums font-medium",
-                        pos.unrealizedPnl > 0 && "text-green-600",
-                        pos.unrealizedPnl < 0 && "text-red-600",
+                        "text-right font-mono tabular-nums font-medium",
+                        pos.unrealizedPnl > 0 && "text-gain",
+                        pos.unrealizedPnl < 0 && "text-loss",
                       )}
                     >
-                      {formatCurrency(pos.unrealizedPnl)}
+                      {formatSignedCurrency(pos.unrealizedPnl)}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           ) : (
-            <p className="py-6 text-center text-muted-foreground">
-              No open positions.
+            <p role="status" aria-live="polite" className="py-6 text-center text-muted-foreground">
+              No open positions. Buy stocks to see them tracked here.
             </p>
           )}
         </CardContent>

@@ -33,7 +33,7 @@ api/                    # Fastify REST API (Zod validation, plugin architecture,
     routes/
       health.ts         # GET /health
       watchlist/        # GET/POST/PATCH/DELETE /api/watchlist, GET /api/watchlist/:id
-      candles/          # GET /api/candles/intervals, GET /api/candles/:symbol, POST /api/candles/backfill
+      candles/          # GET /api/candles/intervals, GET /api/candles/latest, GET /api/candles/:symbol, POST /api/candles/backfill
       trades/           # GET/POST /api/trades, GET /api/trades/:id (creates/updates positions atomically)
       positions/        # GET /api/positions, GET /api/positions/summary, GET /api/positions/:symbol
       portfolio/        # GET/POST /api/portfolio/snapshots, GET /api/portfolio/current
@@ -48,16 +48,18 @@ web/                    # Next.js 16 dashboard (App Router, Tailwind v4, shadcn/
     app/                # App Router routes and layouts
     components/ui/      # shadcn/ui components (generated — do not hand-edit)
     components/         # Custom app components (outside ui/)
-      dashboard-shell.tsx   # Main dashboard layout with tab navigation
-      equity-chart.tsx      # Portfolio equity area chart (Recharts)
-      formatters.ts         # Currency/number/date formatting helpers
-      portfolio-tab.tsx     # Portfolio positions tab
-      stat-card.tsx         # Stat card component
-      trades-tab.tsx        # Trades history tab
-      watchlist-tab.tsx     # Watchlist management tab
+      dashboard-shell.tsx       # Main dashboard layout with tab navigation
+      equity-chart.tsx          # Portfolio equity area chart (Recharts)
+      error-boundary.tsx        # React error boundary with reload UI
+      formatters.ts             # Currency/number/date formatting helpers
+      portfolio-tab.tsx         # Portfolio positions tab
+      stale-data-announcer.tsx  # Accessible announcer for stale data states
+      stat-card.tsx             # Stat card component
+      trades-tab.tsx            # Trades history tab
+      watchlist-tab.tsx         # Watchlist management tab
     lib/
       utils.ts              # cn() helper for className merging
-      api.ts                # API client — typed fetch wrappers for all API endpoints
+      api.ts                # API client — typed fetch wrappers for all API endpoints (uses NEXT_PUBLIC_API_URL, defaults to localhost:3001)
     hooks/
       use-fetch.ts          # Generic data-fetching hook with loading/error state
       use-mobile.ts         # Mobile viewport detection hook
@@ -189,8 +191,8 @@ import { cn } from "@/lib/utils";
 | Variables/consts   | camelCase        | `const apiKey = ...`             |
 | Types / Interfaces | PascalCase       | `type PortfolioPosition = ...`   |
 | Constants (env)    | UPPER_SNAKE_CASE | `const PORT = 3000`              |
-| SQL tables/columns | snake_case       | `portfolio_positions.created_at` |
-| API route URLs     | kebab-case       | `/api/portfolio-positions`       |
+| SQL tables/columns | snake_case       | `portfolio_snapshots.created_at` |
+| API route URLs     | kebab-case       | `/api/portfolio/snapshots`       |
 
 ## Fastify Patterns
 
@@ -272,6 +274,8 @@ When adding a new env var, add it to `packages/env/src/schema.ts` first, then re
 | `GAINSTER_DB_PATH`    | No       | `gainster-db`  | SQLite file path               |
 | `API_PORT`            | No       | `3001`         | Fastify server port            |
 | `INITIAL_CASH`        | No       | `100000`       | Starting paper trading cash    |
+
+The web dashboard also reads `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`) directly via `process.env` at build time. This is a Next.js convention — it is not managed by `loadEnv()` or `packages/env/`.
 
 ## Error Handling
 

@@ -71,7 +71,19 @@ Env vars:
 - `GAINSTER_DB_PATH` — SQLite database path (default: `gainster-db`)
 - `API_PORT` — Fastify server port (default: 3001)
 - `INITIAL_CASH` — Starting paper trading cash balance (default: 100000)
+- `NEXT_PUBLIC_API_URL` — Web dashboard API base URL (default: `http://localhost:3001`). Next.js build-time variable, not managed by `loadEnv()`.
 
 ## Do Not Edit
 
 - `web/src/components/ui/*` — shadcn/ui generated components. Regenerate with the shadcn CLI, don't hand-edit.
+
+## Design Context
+
+See `.impeccable.md` for full details. Key points:
+
+- **Users**: Paper traders and learners using Gainster as a sandbox to explore stock trading
+- **Personality**: Sharp, minimal, intentional — inspired by shadcn finance dashboard showcases
+- **Theme**: Dark mode primary, light mode secondary
+- **Color**: Monochromatic grays (OKLCH) + semantic green/red for financial data. Chart colors in cool purple-blue spectrum
+- **Typography**: Geist Sans for UI, Geist Mono with tabular-nums for all financial data
+- **Principles**: Data first, quiet confidence, learn by seeing, consistent rhythm, dark-native

@@ -121,6 +121,7 @@ Store all env vars in the root `.env` file. Always use `loadEnv()` from `@gainst
 | `GAINSTER_DB_PATH` | SQLite file path (default `gainster-db` in cwd) |
 | `API_PORT` | Fastify server port (default 3001) |
 | `INITIAL_CASH` | Starting paper trading cash balance (default 100000) |
+| `NEXT_PUBLIC_API_URL` | Web dashboard API base URL (default `http://localhost:3001`). Next.js build-time variable, not managed by `loadEnv()`. |
 
 ## License
 

@@ -23,6 +23,7 @@ export {
   upsertCandles,
   getCandleDatetimes,
   getCandles,
+  getLatestCandlesBySymbols,
   getAllWatchlistItems,
   getWatchlistItemById,
   insertWatchlistItem,
