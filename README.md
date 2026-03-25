@@ -12,7 +12,7 @@ web/                  — Next.js 16 dashboard (App Router, Tailwind v4, shadcn/
 packages/env/         — Centralized env loading + validation (zod)
 packages/db/          — Shared database package (Drizzle ORM + SQLite)
 packages/market-data/ — Market data provider library (TwelveData integration)
-packages/scripts/     — CLI scripts (backfill, etc.)
+packages/scripts/     — CLI scripts (backfill, seed)
 ```
 
 Managed with **pnpm workspaces** (`pnpm v10.28.2`).
@@ -61,6 +61,7 @@ pnpm dev
 | `pnpm db:studio` | Open Drizzle Studio |
 | `pnpm backfill` | Backfill candle data (all active watchlist tickers, 5min) |
 | `pnpm backfill -- -s AAPL -i 1day` | Backfill specific symbol/interval |
+| `pnpm seed` | Seed DB with synthetic demo data (no API key needed) |
 | `pnpm test` | Run API tests (vitest) |
 | `pnpm test:api` | Run API tests (vitest, explicit filter) |
 | `pnpm --filter @gainster/web lint` | Lint the web package |
@@ -104,8 +105,9 @@ pnpm dev
 ### Scripts (`@gainster/scripts`)
 
 - **Backfill** — seeds historical OHLCV candle data from TwelveData into SQLite
-- Flags: `--symbol` / `-s` (default: all active watchlist tickers), `--interval` / `-i` (default: `5min`)
-- Batch upsert with duplicate detection, intraday gap warnings
+  - Flags: `--symbol` / `-s` (default: all active watchlist tickers), `--interval` / `-i` (default: `5min`)
+  - Batch upsert with duplicate detection, intraday gap warnings
+- **Seed** — generates synthetic demo data (watchlist, candles, trades, positions, snapshots) without requiring an API key
 
 ## Environment Variables
 

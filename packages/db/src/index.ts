@@ -3,6 +3,7 @@ export type { DrizzleDb, CreateDbResult } from './client.js';
 export { createConnection } from './connection.js';
 export type { ConnectionOptions, ConnectionResult } from './connection.js';
 export { migrate } from './migrate.js';
+export { eq, sql } from 'drizzle-orm';
 export { account } from './schema/index.js';
 export type { Account, NewAccount } from './schema/index.js';
 export { watchlist } from './schema/index.js';

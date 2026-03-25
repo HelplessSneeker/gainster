@@ -4,10 +4,12 @@
   "type": "module",
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./schema": {
+      "development": "./src/schema/index.ts",
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"
     }
@@ -15,7 +17,7 @@
   "scripts": {
     "build": "tsc -b",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/migrate.ts",
+    "db:migrate": "tsx --conditions development scripts/migrate.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

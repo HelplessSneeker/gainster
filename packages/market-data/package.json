@@ -4,13 +4,14 @@
   "type": "module",
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
   },
   "scripts": {
     "build": "tsc -b",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx --conditions development scripts/smoke.ts"
   },
   "devDependencies": {
     "@gainster/env": "workspace:*",

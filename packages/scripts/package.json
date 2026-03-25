@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "backfill": "tsx src/backfill.ts"
+    "backfill": "tsx --conditions development src/backfill.ts",
+    "seed": "tsx --conditions development src/seed.ts"
   },
   "dependencies": {
     "@gainster/db": "workspace:*",

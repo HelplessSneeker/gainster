@@ -26,6 +26,7 @@
     "db:migrate": "pnpm --filter @gainster/db db:migrate",
     "db:studio": "pnpm --filter @gainster/db db:studio",
     "backfill": "pnpm --filter @gainster/scripts backfill",
+    "seed": "pnpm --filter @gainster/scripts seed",
     "test": "pnpm --filter @gainster/api test",
     "test:api": "pnpm --filter @gainster/api test"
   }

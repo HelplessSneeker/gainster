@@ -47,9 +47,20 @@ web/                    # Next.js 16 dashboard (App Router, Tailwind v4, shadcn/
   src/
     app/                # App Router routes and layouts
     components/ui/      # shadcn/ui components (generated — do not hand-edit)
-    components/         # Custom app components go here (outside ui/)
-    lib/utils.ts        # cn() helper for className merging
-    hooks/              # Custom React hooks
+    components/         # Custom app components (outside ui/)
+      dashboard-shell.tsx   # Main dashboard layout with tab navigation
+      equity-chart.tsx      # Portfolio equity area chart (Recharts)
+      formatters.ts         # Currency/number/date formatting helpers
+      portfolio-tab.tsx     # Portfolio positions tab
+      stat-card.tsx         # Stat card component
+      trades-tab.tsx        # Trades history tab
+      watchlist-tab.tsx     # Watchlist management tab
+    lib/
+      utils.ts              # cn() helper for className merging
+      api.ts                # API client — typed fetch wrappers for all API endpoints
+    hooks/
+      use-fetch.ts          # Generic data-fetching hook with loading/error state
+      use-mobile.ts         # Mobile viewport detection hook
 packages/
   env/                  # Centralized env loading + validation (zod)
     src/
@@ -83,9 +94,10 @@ packages/
           index.ts      # Barrel re-export
     scripts/
       smoke.ts          # Smoke test — fetches a quote via the provider
-  scripts/              # CLI scripts (backfill, etc.)
+  scripts/              # CLI scripts (backfill, seed)
     src/
       backfill.ts       # Main backfill entry — uses loadEnv(), passes config explicitly
+      seed.ts           # Synthetic demo data seeder (no API key needed)
       lib/
         fetch-candles.ts   # Fetch candles from market data provider
         upsert-candles.ts  # Batch upsert candles into DB
@@ -115,6 +127,7 @@ pnpm db:migrate         # Apply pending migrations to the database
 pnpm db:studio          # Open Drizzle Studio (interactive DB browser)
 pnpm backfill           # Backfill candle data from TwelveData
 pnpm backfill -- -s AAPL -i 1day  # Backfill specific symbol/interval
+pnpm seed               # Seed DB with synthetic demo data (no API key needed)
 
 # Testing (vitest — API package only so far)
 pnpm test                                    # Run all API tests
@@ -171,7 +184,7 @@ import { cn } from "@/lib/utils";
 | Thing              | Style            | Example                          |
 |--------------------|------------------|----------------------------------|
 | Files & directories| kebab-case       | `price-cache.ts`, `routes/`      |
-| React components   | PascalCase file  | `PortfolioTable.tsx`             |
+| React components   | kebab-case file  | `equity-chart.tsx`               |
 | Functions          | camelCase        | `fetchTimeSeries()`              |
 | Variables/consts   | camelCase        | `const apiKey = ...`             |
 | Types / Interfaces | PascalCase       | `type PortfolioPosition = ...`   |

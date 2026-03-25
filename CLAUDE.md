@@ -20,6 +20,7 @@ pnpm db:migrate                   # Apply pending migrations
 pnpm db:studio                    # Open Drizzle Studio
 pnpm backfill                     # Backfill candle data from TwelveData
 pnpm backfill -- -s AAPL -i 1day # Backfill specific symbol/interval
+pnpm seed                         # Seed DB with synthetic demo data (no API key needed)
 pnpm test                         # Run API tests (vitest)
 pnpm test:api                     # Run API tests (vitest)
 pnpm --filter @gainster/web lint  # ESLint (web only, no API linter)
@@ -40,7 +41,7 @@ pnpm monorepo with six packages:
 - **`packages/env/`** (`@gainster/env`) — Centralized environment variable loading and validation. Reads root `.env` file, validates via zod schema, and exports a typed `Env` object. Used by the API server, scripts, and smoke tests; library packages accept explicit config instead of reading env directly.
 - **`packages/market-data/`** (`@gainster/market-data`) — Standalone market data provider library. TwelveData integration via native `fetch` with built-in rate limiter (default 8 req/min). `createTwelveDataProvider()` accepts an explicit config object — no env coupling.
 - **`packages/db/`** (`@gainster/db`) — Shared database package. Drizzle ORM + better-sqlite3. Owns all schema definitions (account, watchlist, candles, ai_signals, trades, positions, portfolio_snapshots), migrations, and query helpers. Two subpath exports: `@gainster/db` (client + migrations + schema + queries) and `@gainster/db/schema` (schema-only, no db connection). `createDb()` returns `{ db, dbPath }`. Callers pass `dbPath` explicitly (default: `'gainster-db'`); warns if omitted.
-- **`packages/scripts/`** (`@gainster/scripts`) — CLI scripts. Depends on `@gainster/db`, `@gainster/env`, `@gainster/market-data`. Currently contains the `backfill` command for seeding historical candle data.
+- **`packages/scripts/`** (`@gainster/scripts`) — CLI scripts. Depends on `@gainster/db`, `@gainster/env`, `@gainster/market-data`. Contains the `backfill` command for seeding historical candle data and the `seed` command for generating synthetic demo data without an API key.
 
 ## Critical TypeScript Constraints (ESM packages)
 
